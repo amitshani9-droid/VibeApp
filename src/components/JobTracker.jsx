@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'עמית', employeeId = '', viewMode = 'all' }) {
+function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'עמית', employeeId = '', viewMode = 'all', playSound }) {
     const [entryMode, setEntryMode] = useState('timer');
     const [isTracking, setIsTracking] = useState(false);
     const [startTime, setStartTime] = useState(null);
@@ -40,6 +40,15 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
     const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
     const [logTime, setLogTime] = useState('');
     const [isLogFormOpen, setIsLogFormOpen] = useState(false);
+    const [newEventText, setNewEventText] = useState('');
+    const [events, setEvents] = useState(() => {
+        const saved = localStorage.getItem('vibe_events');
+        return saved ? JSON.parse(saved) : [];
+    });
+
+    useEffect(() => {
+        localStorage.setItem('vibe_events', JSON.stringify(events));
+    }, [events]);
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -110,6 +119,7 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
         setIsTracking(true);
         setElapsed(0);
         setShowSummary(false);
+        if (playSound) playSound('timer', true);
     };
 
     const [confirmDate, setConfirmDate] = useState('');
@@ -125,6 +135,7 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
         setIsTracking(false);
         setConfirmDate(new Date().toISOString().split('T')[0]); // Default to Today
         setShowSummary(true);
+        if (playSound) playSound('timer', false);
     };
 
     const handleConfirmTrip = () => {
@@ -167,6 +178,7 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
         });
 
         // Success Feedback
+        if (playSound) playSound('success');
         alert('✅ המשמרת נשמרה בהצלחה!');
 
         // Reset states

@@ -1,4 +1,7 @@
-function Training() {
+import React, { useState, useEffect } from 'react';
+import confetti from 'canvas-confetti';
+
+function Training({ workoutTime, playSuccess, playClick }) {
     const todayDateKey = new Date().toLocaleDateString('en-GB'); // DD/MM/YYYY
 
     // --- State ---
@@ -65,6 +68,7 @@ function Training() {
                 return ex;
             })
         }));
+        if (playClick) playClick();
     };
 
     const addExercise = () => {
@@ -111,6 +115,7 @@ function Training() {
         const newState = !completed;
         setCompleted(newState);
         if (newState) {
+            if (playSuccess) playSuccess();
             confetti({
                 particleCount: 150,
                 spread: 70,

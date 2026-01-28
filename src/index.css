@@ -266,6 +266,10 @@ button,
   user-select: none;
 }
 
+button:active {
+  transform: scale(0.95) !important;
+}
+
 .start-btn {
   background: var(--accent-color);
   color: #fff;

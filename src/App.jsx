@@ -7,40 +7,70 @@ import Training from './components/Training';
 import Equipment from './components/Equipment';
 import Achievements from './components/Achievements';
 import Settings from './components/Settings';
+import { sounds } from './utils/sounds';
+
+// Data Migration Script to 'vibe_' prefix
+const migrateData = () => {
+  const keys = ['trips', 'userName', 'employeeId', 'startDate', 'savingsGoal', 'shiftRate', 'workoutTime', 'events', 'soundEnabled'];
+  keys.forEach(key => {
+    const oldKey = `myGrowthApp_${key}`;
+    const legacyEventKey = key === 'events' ? 'dailyEvents' : oldKey;
+    const newKey = `vibe_${key}`;
+    const oldData = localStorage.getItem(legacyEventKey) || localStorage.getItem(oldKey);
+    if (oldData && !localStorage.getItem(newKey)) {
+      localStorage.setItem(newKey, oldData);
+    }
+  });
+};
+migrateData();
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem('vibe_soundEnabled');
+    return saved === null ? true : saved === 'true';
+  });
+
+  useEffect(() => {
+    sounds.setEnabled(soundEnabled);
+    localStorage.setItem('vibe_soundEnabled', soundEnabled.toString());
+  }, [soundEnabled]);
+
+  const handleTabChange = (tab) => {
+    setActiveTab(tab);
+    sounds.playClick();
+  };
 
   // --- State for Settings & Personalization ---
   // Identity
-  const [userName, setUserName] = useState(() => localStorage.getItem('myGrowthApp_userName') || 'עמית שני');
-  const [employeeId, setEmployeeId] = useState(() => localStorage.getItem('myGrowthApp_employeeId') || '');
+  const [userName, setUserName] = useState(() => localStorage.getItem('vibe_userName') || 'עמית שני');
+  const [employeeId, setEmployeeId] = useState(() => localStorage.getItem('vibe_employeeId') || '');
 
   // Journey
-  const [startDate, setStartDate] = useState(() => localStorage.getItem('myGrowthApp_startDate') || '2026-02-01');
-  const [savingsGoal, setSavingsGoal] = useState(() => Number(localStorage.getItem('myGrowthApp_savingsGoal')) || 50000);
+  const [startDate, setStartDate] = useState(() => localStorage.getItem('vibe_startDate') || '2026-02-01');
+  const [savingsGoal, setSavingsGoal] = useState(() => Number(localStorage.getItem('vibe_savingsGoal')) || 50000);
 
   // Salary
-  const [shiftRate, setShiftRate] = useState(() => Number(localStorage.getItem('myGrowthApp_shiftRate')) || 400);
+  const [shiftRate, setShiftRate] = useState(() => Number(localStorage.getItem('vibe_shiftRate')) || 400);
 
   // Notifications
-  const [workoutTime, setWorkoutTime] = useState(() => localStorage.getItem('myGrowthApp_workoutTime') || '19:00');
+  const [workoutTime, setWorkoutTime] = useState(() => localStorage.getItem('vibe_workoutTime') || '19:00');
 
   // Persistence Effects
-  useEffect(() => localStorage.setItem('myGrowthApp_userName', userName), [userName]);
-  useEffect(() => localStorage.setItem('myGrowthApp_employeeId', employeeId), [employeeId]);
-  useEffect(() => localStorage.setItem('myGrowthApp_startDate', startDate), [startDate]);
-  useEffect(() => localStorage.setItem('myGrowthApp_savingsGoal', savingsGoal), [savingsGoal]);
-  useEffect(() => localStorage.setItem('myGrowthApp_shiftRate', shiftRate), [shiftRate]);
-  useEffect(() => localStorage.setItem('myGrowthApp_workoutTime', workoutTime), [workoutTime]);
+  useEffect(() => localStorage.setItem('vibe_userName', userName), [userName]);
+  useEffect(() => localStorage.setItem('vibe_employeeId', employeeId), [employeeId]);
+  useEffect(() => localStorage.setItem('vibe_startDate', startDate), [startDate]);
+  useEffect(() => localStorage.setItem('vibe_savingsGoal', savingsGoal), [savingsGoal]);
+  useEffect(() => localStorage.setItem('vibe_shiftRate', shiftRate), [shiftRate]);
+  useEffect(() => localStorage.setItem('vibe_workoutTime', workoutTime), [workoutTime]);
 
   const [trips, setTrips] = useState(() => {
-    const saved = localStorage.getItem('myGrowthApp_trips');
+    const saved = localStorage.getItem('vibe_trips');
     return saved ? JSON.parse(saved) : [];
   });
 
   useEffect(() => {
-    localStorage.setItem('myGrowthApp_trips', JSON.stringify(trips));
+    localStorage.setItem('vibe_trips', JSON.stringify(trips));
   }, [trips]);
 
   // System Reset Function
@@ -110,8 +140,8 @@ function App() {
     const trainingDates = new Set();
     for (let i = 0; i < localStorage.length; i++) {
       const key = localStorage.key(i);
-      if (key.startsWith('myGrowthApp_training_complete_') && localStorage.getItem(key) === 'true') {
-        const datePart = key.replace('myGrowthApp_training_complete_', '');
+      if (key.startsWith('vibe_training_complete_') && localStorage.getItem(key) === 'true') {
+        const datePart = key.replace('vibe_training_complete_', '');
         // Convert DD/MM/YYYY to YYYY-MM-DD
         const [d, m, y] = datePart.split('/');
         trainingDates.add(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
@@ -175,7 +205,7 @@ function App() {
 
   const handleExportExcel = () => {
     // 1. Get Events from LocalStorage
-    const savedEvents = localStorage.getItem('myGrowthApp_events');
+    const savedEvents = localStorage.getItem('vibe_events');
     const events = savedEvents ? JSON.parse(savedEvents) : [];
 
     // 2. Prepare Data Rows
@@ -287,13 +317,13 @@ function App() {
             totalNet={displayEarnings}
             remainingTrips={Math.ceil((targetEarnings - netEarnings) / shiftRate)}
             currentStreak={currentStreak}
-            onStartShift={() => setActiveTab('job')}
-            onLogManual={() => setActiveTab('job')}
+            onStartShift={() => handleTabChange('operations')}
+            onLogManual={() => handleTabChange('operations')}
           />
         )}
 
-        {/* JobTracker - Persisted for Timer */}
-        <div style={{ display: (activeTab === 'job' || activeTab === 'log') ? 'block' : 'none' }}>
+        {/* Combined Operations Tab (Work + Log) */}
+        {activeTab === 'operations' && (
           <JobTracker
             trips={isStarted ? filteredTrips : []}
             addTrip={addTrip}
@@ -301,78 +331,75 @@ function App() {
             shiftRate={shiftRate}
             userName={userName}
             employeeId={employeeId}
-            viewMode={activeTab === 'log' ? 'log' : 'timer'}
-          />
-        </div>
-
-        {activeTab === 'training' && <Training workoutTime={workoutTime} />}
-
-        {/* Hidden internal routes or preserved for direct access if needed */}
-        {activeTab === 'budget' && (
-          <Budget
-            totalEarnings={totalEarnings}
-            netEarnings={netEarnings}
-            targetEarnings={targetEarnings}
-            tripCount={tripCount}
-            trips={isStarted ? filteredTrips : []}
-            shiftRate={shiftRate}
+            viewMode="all"
+            playSound={(type, val) => {
+              if (type === 'timer') sounds.playTimer(val);
+              if (type === 'success') sounds.playSuccess();
+            }}
           />
         )}
-        {activeTab === 'gear' && <Equipment />}
 
-        {activeTab === 'awards' && (
-          <Achievements
-            netEarnings={netEarnings}
-            tripCount={tripCount}
-            overtimeCount={overtimeCount}
-          />
-        )}
+        {activeTab === 'training' && <Training workoutTime={workoutTime} playSuccess={() => sounds.playSuccess()} playClick={() => sounds.playClick()} />}
+        {activeTab === 'equipment' && <Equipment playClick={() => sounds.playClick()} />}
+
         {activeTab === 'settings' && (
-          <Settings
-            userName={userName} setUserName={setUserName}
-            employeeId={employeeId} setEmployeeId={setEmployeeId}
-            startDate={startDate} setStartDate={setStartDate}
-            savingsGoal={savingsGoal} setSavingsGoal={setSavingsGoal}
-            shiftRate={shiftRate} setShiftRate={setShiftRate}
-            workoutTime={workoutTime} setWorkoutTime={setWorkoutTime}
-            onReset={handleSystemReset}
-            onExport={handleExportExcel}
-          />
+          <>
+            <Budget
+              totalEarnings={totalEarnings}
+              netEarnings={netEarnings}
+              targetEarnings={targetEarnings}
+              tripCount={tripCount}
+              trips={isStarted ? filteredTrips : []}
+              shiftRate={shiftRate}
+            />
+            <Settings
+              userName={userName} setUserName={setUserName}
+              employeeId={employeeId} setEmployeeId={setEmployeeId}
+              startDate={startDate} setStartDate={setStartDate}
+              savingsGoal={savingsGoal} setSavingsGoal={setSavingsGoal}
+              shiftRate={shiftRate} setShiftRate={setShiftRate}
+              workoutTime={workoutTime} setWorkoutTime={setWorkoutTime}
+              onReset={handleSystemReset}
+              onExport={handleExportExcel}
+              soundEnabled={soundEnabled}
+              setSoundEnabled={setSoundEnabled}
+            />
+          </>
         )}
       </main>
 
       <nav className="bottom-nav">
         <button
           className={activeTab === 'dashboard' ? 'active' : ''}
-          onClick={() => setActiveTab('dashboard')}
+          onClick={() => handleTabChange('dashboard')}
         >
           <span>🏠</span>
           <span>ראשי</span>
         </button>
         <button
-          className={activeTab === 'job' ? 'active' : ''}
-          onClick={() => setActiveTab('job')}
+          className={activeTab === 'operations' ? 'active' : ''}
+          onClick={() => handleTabChange('operations')}
         >
-          <span>⏱️</span>
-          <span>עבודה</span>
-        </button>
-        <button
-          className={activeTab === 'log' ? 'active' : ''}
-          onClick={() => setActiveTab('log')}
-        >
-          <span>📝</span>
+          <span>📖</span>
           <span>יומן</span>
         </button>
         <button
           className={activeTab === 'training' ? 'active' : ''}
-          onClick={() => setActiveTab('training')}
+          onClick={() => handleTabChange('training')}
         >
           <span>🏋️</span>
           <span>אימון</span>
         </button>
         <button
+          className={activeTab === 'equipment' ? 'active' : ''}
+          onClick={() => handleTabChange('equipment')}
+        >
+          <span>🎒</span>
+          <span>ציוד</span>
+        </button>
+        <button
           className={activeTab === 'settings' ? 'active' : ''}
-          onClick={() => setActiveTab('settings')}
+          onClick={() => handleTabChange('settings')}
         >
           <span>⚙️</span>
           <span>הגדרות</span>

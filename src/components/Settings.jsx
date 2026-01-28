@@ -7,6 +7,7 @@ function Settings({
     savingsGoal, setSavingsGoal,
     shiftRate, setShiftRate,
     workoutTime, setWorkoutTime,
+    soundEnabled, setSoundEnabled,
     onReset, onExport
 }) {
     return (
@@ -94,6 +95,17 @@ function Settings({
                         onChange={(e) => setWorkoutTime(e.target.value)}
                         className="glass-input"
                     />
+                </div>
+                <div className="settings-row">
+                    <label className="toggle-label" style={{ marginTop: '15px' }}>
+                        <span>צלילי ממשק (UI Sounds)</span>
+                        <input
+                            type="checkbox"
+                            checked={soundEnabled}
+                            onChange={(e) => setSoundEnabled(e.target.checked)}
+                        />
+                        <span className="toggle-switch"></span>
+                    </label>
                 </div>
             </div>
 

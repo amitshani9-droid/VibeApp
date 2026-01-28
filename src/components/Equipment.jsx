@@ -1,115 +1,98 @@
 import React, { useState, useEffect } from 'react';
 
-function Equipment() {
-    const initialGear = {
-        gun: { label: 'נשק אישי', checked: false },
-        ammo: { label: 'תחמושת (מחסניות)', checked: false },
-        license: { label: 'רישיון נשק / תעודה', checked: false },
-        uniform: { label: 'מדים ייצוגיים', checked: false },
-        boots: { label: 'נעליים טקטיות', checked: false },
-        water: { label: 'מים (3 ליטר)', checked: false },
-        food: { label: 'אוכל למשמרת', checked: false },
-        coffee: { label: 'פק"ל קפה', checked: false },
-        powerbank: { label: 'סוללה ניידת (מטען)', checked: false },
-        headphones: { label: 'אוזניות', checked: false },
-    };
-
-    const [gear, setGear] = useState(() => {
-        const saved = localStorage.getItem('myGrowthApp_gear');
-        return saved ? JSON.parse(saved) : initialGear;
+function Equipment({ playClick }) {
+    const [items, setItems] = useState(() => {
+        const saved = localStorage.getItem('vibe_equipment_list');
+        if (saved) return JSON.parse(saved);
+        return [
+            { id: 1, name: 'פק"ל קפה', checked: false },
+            { id: 2, name: 'מטען נייד', checked: false },
+            { id: 3, name: 'בגדי עבודה', checked: false },
+            { id: 4, name: 'כלי רחצה', checked: false },
+        ];
     });
 
     useEffect(() => {
-        localStorage.setItem('myGrowthApp_gear', JSON.stringify(gear));
-    }, [gear]);
+        localStorage.setItem('vibe_equipment_list', JSON.stringify(items));
+    }, [items]);
 
-    const toggleGear = (key) => {
-        setGear(prev => ({
-            ...prev,
-            [key]: { ...prev[key], checked: !prev[key].checked }
-        }));
+    const toggleItem = (id) => {
+        setItems(prev => prev.map(item =>
+            item.id === id ? { ...item, checked: !item.checked } : item
+        ));
+        if (playClick) playClick();
     };
 
-    const resetGear = () => {
-        if (window.confirm('האם לאפס את רשימת הציוד?')) {
-            setGear(initialGear);
-        }
-    };
-
-    const [statusMessage, setStatusMessage] = useState(null); // { type: 'success' | 'warning', text: '' }
-
-    const allChecked = Object.values(gear).every(item => item.checked);
-
-    useEffect(() => {
-        if (allChecked) {
-            setStatusMessage({ type: 'success', text: '✅ הכל מוכן! אפשר לצאת לטיול' });
-        } else {
-            setStatusMessage(null);
-        }
-    }, [gear, allChecked]);
-
-    const checkReadiness = () => {
-        if (!allChecked) {
-            setStatusMessage({ type: 'warning', text: '⚠️ שים לב: חסר ציוד ברשימה!' });
-            // Clear warning after 3 seconds
-            setTimeout(() => setStatusMessage(null), 3000);
+    const resetList = () => {
+        if (window.confirm('האם לאפס את כל הרשימה?')) {
+            setItems(items.map(item => ({ ...item, checked: false })));
         }
     };
 
     return (
-        <div className="section-container">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                <h2>ציוד למשמרת</h2>
+        <div className="section-container equipment-page">
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                <h2 style={{ margin: 0 }}>🎒 ציוד לרכב / שטח</h2>
                 <button
-                    onClick={resetGear}
-                    style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: 'var(--text-secondary)', padding: '8px 16px', borderRadius: '12px', cursor: 'pointer' }}
+                    onClick={resetList}
+                    style={{ background: 'none', border: 'none', color: '#666', fontSize: '0.85rem', textDecoration: 'underline', cursor: 'pointer' }}
                 >
-                    איפוס
+                    איפוס רשימה
                 </button>
             </div>
 
-            <div className="card" style={{ position: 'relative', paddingBottom: '60px' }}>
-                <ul className="checklist">
-                    {Object.entries(gear).map(([key, item]) => (
-                        <li
-                            key={key}
-                            className={`checklist-item ${item.checked ? 'completed' : ''}`}
-                            onClick={() => toggleGear(key)}
-                        >
-                            <div className="check-circle">{item.checked && '✓'}</div>
-                            <div className="item-content">
-                                <strong>{item.label}</strong>
-                            </div>
-                        </li>
-                    ))}
-                </ul>
-
-                {statusMessage && (
-                    <div style={{
-                        marginTop: '20px',
-                        padding: '15px',
-                        borderRadius: '12px',
-                        textAlign: 'center',
-                        fontWeight: 'bold',
-                        background: statusMessage.type === 'success' ? 'rgba(74, 144, 226, 0.1)' : 'rgba(255, 46, 46, 0.1)',
-                        color: statusMessage.type === 'success' ? 'var(--accent-color)' : 'var(--danger-color)',
-                        border: `1px solid ${statusMessage.type === 'success' ? 'var(--accent-color)' : 'var(--danger-color)'}`,
-                        animation: 'fade-in 0.3s'
-                    }}>
-                        {statusMessage.text}
-                    </div>
-                )}
-
-                {!allChecked && (
-                    <button
-                        onClick={checkReadiness}
-                        className="big-btn"
-                        style={{ marginTop: '20px', background: '#333', color: '#ccc', fontSize: '1rem' }}
+            <div className="card glass-panel" style={{ padding: '10px' }}>
+                {items.map(item => (
+                    <div
+                        key={item.id}
+                        onClick={() => toggleItem(item.id)}
+                        className={`equipment-item ${item.checked ? 'checked' : ''}`}
+                        style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '15px',
+                            padding: '18px 15px',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)',
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            background: item.checked ? 'rgba(59, 130, 246, 0.05)' : 'transparent'
+                        }}
                     >
-                        🧐 בדיקת מוכנות
-                    </button>
-                )}
+                        <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '6px',
+                            border: '2px solid',
+                            borderColor: item.checked ? 'var(--accent-color)' : '#444',
+                            background: item.checked ? 'var(--accent-color)' : 'transparent',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '0.8rem',
+                            color: 'white',
+                            transition: 'all 0.2s ease'
+                        }}>
+                            {item.checked && '✓'}
+                        </div>
+                        <span style={{
+                            fontSize: '1.1rem',
+                            color: item.checked ? '#888' : '#eee',
+                            textDecoration: item.checked ? 'line-through' : 'none'
+                        }}>
+                            {item.name}
+                        </span>
+                    </div>
+                ))}
             </div>
+
+            <div style={{ marginTop: '20px', textAlign: 'center', color: '#666', fontSize: '0.85rem' }}>
+                כל השינויים נשמרים אוטומטית. 🚀
+            </div>
+
+            <style>{`
+                .equipment-item:last-child { border-bottom: none !important; }
+                .equipment-item:active { transform: scale(0.98); background: rgba(255,255,255,0.02); }
+            `}</style>
         </div>
     );
 }
