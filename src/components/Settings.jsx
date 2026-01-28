@@ -8,7 +8,7 @@ function Settings({
     shiftRate, setShiftRate,
     workoutTime, setWorkoutTime,
     soundEnabled, setSoundEnabled,
-    onReset, onExport
+    onReset, onExport, onExportPDF
 }) {
     return (
         <div className="section-container">
@@ -16,14 +16,24 @@ function Settings({
 
             <div className="card" style={{ marginBottom: '20px', background: 'rgba(0, 100, 0, 0.2)', borderColor: 'var(--accent-color)' }}>
                 <h3>📊 נתונים ודוחות</h3>
-                <button
-                    onClick={onExport}
-                    className="big-btn"
-                    style={{ background: '#2E7D32', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
-                >
-                    <span style={{ fontSize: '1.2rem' }}>📑</span>
-                    ייצוא דוח לאקסל
-                </button>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                    <button
+                        onClick={onExport}
+                        className="big-btn"
+                        style={{ background: '#2E7D32', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    >
+                        <span style={{ fontSize: '1.2rem' }}>📑</span>
+                        ייצוא דוח לאקסל (Excel)
+                    </button>
+                    <button
+                        onClick={onExportPDF}
+                        className="big-btn"
+                        style={{ background: '#C62828', color: 'white', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}
+                    >
+                        <span style={{ fontSize: '1.2rem' }}>📕</span>
+                        ייצוא דוח ל-PDF
+                    </button>
+                </div>
             </div>
 
             <div className="card" style={{ marginBottom: '20px' }}>
@@ -97,14 +107,28 @@ function Settings({
                     />
                 </div>
                 <div className="settings-row">
-                    <label className="toggle-label" style={{ marginTop: '15px' }}>
-                        <span>צלילי ממשק (UI Sounds)</span>
-                        <input
-                            type="checkbox"
-                            checked={soundEnabled}
-                            onChange={(e) => setSoundEnabled(e.target.checked)}
-                        />
-                        <span className="toggle-switch"></span>
+                    <label className="toggle-label" style={{ background: 'rgba(255,255,255,0.03)', padding: '16px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                            <span style={{ fontSize: '1rem', color: '#fff' }}>צלילי ממשק (UI Sounds)</span>
+                            <span style={{ fontSize: '0.75rem', color: '#888' }}>משוב קולי בלחצנים ופעולות</span>
+                        </div>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="checkbox"
+                                checked={soundEnabled}
+                                onChange={(e) => setSoundEnabled(e.target.checked)}
+                                style={{
+                                    position: 'absolute',
+                                    opacity: 0,
+                                    width: '100%',
+                                    height: '100%',
+                                    cursor: 'pointer',
+                                    zIndex: 2,
+                                    margin: 0
+                                }}
+                            />
+                            <span className="toggle-switch"></span>
+                        </div>
                     </label>
                 </div>
             </div>

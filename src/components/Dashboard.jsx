@@ -67,10 +67,16 @@ function Dashboard({ totalNet, remainingTrips, currentStreak = 0, onStartShift, 
                         </text>
                     </svg>
                 </div>
-                <div className="goal-footer">
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <span className="goal-value" style={{ fontSize: '1.2rem', color: 'var(--accent-color)' }}>₪{(GOAL - totalNet).toLocaleString()}</span>
-                        <span className="goal-label" style={{ margin: 0, fontSize: '0.8rem' }}>נותרו ליעד</span>
+                <div className="goal-footer" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '20px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', width: '100%', flexDirection: 'column', gap: '15px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(59, 130, 246, 0.08)', padding: '15px', borderRadius: '12px', border: '1px solid rgba(59, 130, 246, 0.2)' }}>
+                            <span style={{ fontSize: '1rem', fontWeight: '600', color: '#aaa' }}>רווח מצטבר:</span>
+                            <span style={{ fontSize: '1.8rem', fontWeight: '900', color: 'var(--accent-color)', letterSpacing: '1px' }}>₪{totalNet.toLocaleString()}</span>
+                        </div>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255, 255, 255, 0.03)', padding: '12px 15px', borderRadius: '12px' }}>
+                            <span style={{ fontSize: '0.9rem', color: '#888' }}>יעד סופי:</span>
+                            <span style={{ fontSize: '1.2rem', fontWeight: '700', color: '#fff' }}>₪{GOAL.toLocaleString()}</span>
+                        </div>
                     </div>
                 </div>
             </div>

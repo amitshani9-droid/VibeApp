@@ -24,6 +24,10 @@ function Training({ workoutTime, playSuccess, playClick }) {
                 { id: 102, name: 'סקוואט עם מוט', sets: 4, reps: '8', completedSets: [false, false, false, false] },
                 { id: 103, name: 'דדליפט', sets: 3, reps: '8', completedSets: [false, false, false] },
                 { id: 104, name: 'מתח עם משקל', sets: 3, reps: '6', completedSets: [false, false, false] }
+            ],
+            swimming: [
+                { id: 201, name: 'חתירה', sets: 10, reps: '50', completedSets: Array(10).fill(false), isSwimming: true },
+                { id: 202, name: 'גב', sets: 5, reps: '50', completedSets: Array(5).fill(false), isSwimming: true }
             ]
         };
     });
@@ -168,9 +172,33 @@ function Training({ workoutTime, playSuccess, playClick }) {
                         fontSize: '0.9rem'
                     }}
                 >
-                    🏋️ חדר כושר
+                    🏋️ ח"כ
+                </button>
+                <button
+                    onClick={() => setTemplate('swimming')}
+                    style={{
+                        flex: 1,
+                        background: template === 'swimming' ? 'var(--accent-color)' : 'transparent',
+                        color: template === 'swimming' ? 'white' : '#888',
+                        padding: '12px',
+                        borderRadius: '10px',
+                        border: 'none',
+                        fontWeight: '600',
+                        fontSize: '0.9rem'
+                    }}
+                >
+                    🏊 שחייה
                 </button>
             </div>
+
+            {/* Schedule Reminder */}
+            {(new Date().getDay() === 1 || new Date().getDay() === 3) && (
+                <div className="card" style={{ background: 'rgba(59, 130, 246, 0.1)', borderColor: 'var(--accent-color)', padding: '12px', marginBottom: '15px' }}>
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: '#fff', textAlign: 'center' }}>
+                        📅 <strong>תזכורת:</strong> היום יום {new Date().getDay() === 1 ? 'שני' : 'רביעי'} - זמן לשחות! 🏊
+                    </p>
+                </div>
+            )}
 
             {/* Exercise List */}
             <div className="exercise-list" style={{ display: 'flex', flexDirection: 'column', gap: '15px', marginBottom: '30px' }}>
@@ -198,7 +226,9 @@ function Training({ workoutTime, playSuccess, playClick }) {
                                         />
                                     </div>
                                     <div style={{ flex: 2 }}>
-                                        <label style={{ fontSize: '0.75rem', color: '#aaa', display: 'block' }}>חזרות/משקל</label>
+                                        <label style={{ fontSize: '0.75rem', color: '#aaa', display: 'block' }}>
+                                            {template === 'swimming' ? 'מרחק (מטרים)' : 'חזרות/משקל'}
+                                        </label>
                                         <input
                                             type="text"
                                             value={ex.reps}
@@ -214,7 +244,7 @@ function Training({ workoutTime, playSuccess, playClick }) {
                                     <div>
                                         <h3 style={{ margin: 0, fontSize: '1.15rem', color: '#fff' }}>{ex.name}</h3>
                                         <p style={{ margin: '4px 0 0', fontSize: '0.85rem', color: 'var(--accent-color)', fontWeight: '600' }}>
-                                            {ex.sets} סטים • {ex.reps} חזרות
+                                            {ex.sets} {template === 'swimming' ? 'בריכות' : 'סטים'} • {ex.reps} {template === 'swimming' ? 'מטרים' : 'חזרות'}
                                         </p>
                                     </div>
                                 </div>

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'עמית', employeeId = '', viewMode = 'all', playSound }) {
+function JobTracker({ trips, addTrip, updateTrip, deleteTrip, tripCount, shiftRate = 400, userName = 'עמית', employeeId = '', viewMode = 'all', playSound }) {
     const [entryMode, setEntryMode] = useState('timer');
     const [isTracking, setIsTracking] = useState(false);
     const [startTime, setStartTime] = useState(null);
@@ -13,6 +13,7 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
     const [manualDate, setManualDate] = useState('');
     const [manualHours, setManualHours] = useState('');
     const [error, setError] = useState('');
+    const [editingTripId, setEditingTripId] = useState(null);
 
     const checkCourseWeek = (dateStr) => {
         const d = new Date(dateStr);
@@ -170,16 +171,26 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
             setError('🌴 חופשה! אין עבודה בין ה-7 ל-14 במאי.');
             return;
         }
-        addTrip({
-            date: manualDate,
-            hours: parseFloat(manualHours),
-            isSleepover,
-            notes
-        });
 
-        // Success Feedback
-        if (playSound) playSound('success');
-        alert('✅ המשמרת נשמרה בהצלחה!');
+        if (editingTripId) {
+            updateTrip(editingTripId, {
+                date: manualDate,
+                hours: parseFloat(manualHours),
+                isSleepover,
+                notes
+            });
+            setEditingTripId(null);
+            alert('✅ המשמרת עודכנה בהצלחה!');
+        } else {
+            addTrip({
+                date: manualDate,
+                hours: parseFloat(manualHours),
+                isSleepover,
+                notes
+            });
+            if (playSound) playSound('success');
+            alert('✅ המשמרת נשמרה בהצלחה!');
+        }
 
         // Reset states
         setManualDate('');
@@ -187,9 +198,26 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
         setIsSleepover(false);
         setNotes('');
         setError('');
+        setEntryMode('timer');
+    };
 
-        // Switch back to timer or dashboard view if needed - but user said "closes the modal/form"
-        // Since it's a conditional render, resetting states is enough if the form is what they mean.
+    const startEditing = (trip) => {
+        setEditingTripId(trip.id);
+        setManualDate(trip.date);
+        setManualHours(trip.hours.toString());
+        setIsSleepover(trip.isSleepover || false);
+        setNotes(trip.notes || '');
+        setEntryMode('manual');
+        // Scroll to form
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    };
+
+    const cancelEdit = () => {
+        setEditingTripId(null);
+        setManualDate('');
+        setManualHours('');
+        setIsSleepover(false);
+        setNotes('');
         setEntryMode('timer');
     };
 
@@ -230,10 +258,11 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
                                             isTracking ? handleEndShift() : handleStartShift();
                                         }}
                                         className={`fab-btn ${isTracking ? 'stop' : 'start'}`}
+                                        style={{ bottom: '140px' }} // Highly visible
                                     >
                                         {isTracking ? '⏹' : '▶'}
                                     </button>
-                                    {!isTracking && <div style={{ marginTop: '10px', color: '#666', fontSize: '0.9rem', position: 'absolute', top: '90px', width: '200px', textAlign: 'center' }}>לחץ להתחלה</div>}
+                                    {!isTracking && <div style={{ marginTop: '10px', color: '#666', fontSize: '0.9rem', position: 'absolute', bottom: '100px', width: '200px', textAlign: 'center' }}>לחץ להתחלה</div>}
                                 </div>
                             )}
 
@@ -262,11 +291,18 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
                                             {(elapsed / (1000 * 60 * 60)).toFixed(2)} שעות
                                         </div>
 
-                                        <label className="toggle-label">
-                                            <span>לינה (+80₪)</span>
-                                            <input type="checkbox" checked={isSleepover} onChange={(e) => setIsSleepover(e.target.checked)} />
-                                            <span className="toggle-switch"></span>
-                                        </label>
+                                        <div className="toggle-row" style={{ margin: '15px 0', display: 'flex', justifyContent: 'center' }}>
+                                            <label className="toggle-label" style={{
+                                                background: 'rgba(255,255,255,0.03)',
+                                                border: '1px solid rgba(255,255,255,0.05)',
+                                                width: '100%',
+                                                padding: '16px'
+                                            }}>
+                                                <span>🌙 לינה / נסיעות (+80₪)</span>
+                                                <input type="checkbox" checked={isSleepover} onChange={(e) => setIsSleepover(e.target.checked)} />
+                                                <span className="toggle-switch"></span>
+                                            </label>
+                                        </div>
 
                                         {/* Smart Notes */}
                                         <div style={{ marginTop: '15px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
@@ -321,45 +357,65 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
                             {error && <div style={{ color: 'red', marginTop: '10px', textAlign: 'center' }}>{error}</div>}
                         </div>
                     ) : (
-                        <form onSubmit={handleManualSubmit} className="card">
-                            <h3>הוספה ידנית</h3>
-                            {error && <div style={{ color: 'red' }}>{error}</div>}
-                            <label>תאריך</label>
-                            <input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} required />
+                        <form onSubmit={handleManualSubmit} className="card" style={{ display: 'flex', flexDirection: 'column', gap: '15px', border: editingTripId ? '2px solid var(--accent-color)' : 'none' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '5px' }}>
+                                <h3 style={{ margin: 0 }}>{editingTripId ? '✏️ עריכת משמרת' : '📝 הוספה ידנית'}</h3>
+                                {editingTripId && (
+                                    <button type="button" onClick={cancelEdit} style={{ background: 'none', border: 'none', color: '#ff4444', cursor: 'pointer', fontSize: '0.9rem' }}>ביטול עריכה</button>
+                                )}
+                            </div>
 
-                            <label>שעות</label>
-                            <input type="number" step="0.5" value={manualHours} onChange={(e) => setManualHours(e.target.value)} required placeholder="10.0" />
+                            <div className="form-group">
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#aaa', marginBottom: '5px' }}>תאריך המשמרת</label>
+                                <input type="date" value={manualDate} onChange={(e) => setManualDate(e.target.value)} required style={{ marginTop: 0 }} />
+                            </div>
 
-                            <div style={{ marginTop: '15px' }}>
-                                <label className="toggle-label">
-                                    <span>לינה (+80₪)</span>
+                            <div className="form-group">
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#aaa', marginBottom: '5px' }}>סה"כ שעות</label>
+                                <input type="number" step="0.5" value={manualHours} onChange={(e) => setManualHours(e.target.value)} required placeholder="10.0" style={{ marginTop: 0 }} />
+                            </div>
+
+                            <div className="toggle-row" style={{ padding: '5px 0' }}>
+                                <label className="toggle-label" style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                                    <span>🌙 לינה / נסיעות (+80₪)</span>
                                     <input type="checkbox" checked={isSleepover} onChange={(e) => setIsSleepover(e.target.checked)} />
                                     <span className="toggle-switch"></span>
                                 </label>
                             </div>
 
-                            <label>הערות</label>
-                            <div style={{ margin: '10px 0', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                                {quickTags.map(tag => (
-                                    <span
-                                        key={tag}
-                                        onClick={() => addTag(tag)} // Reuse addTag logic (it uses setNotes)
-                                        style={{
-                                            background: 'rgba(255,255,255,0.1)',
-                                            padding: '5px 10px',
-                                            borderRadius: '15px',
-                                            fontSize: '0.8rem',
-                                            cursor: 'pointer',
-                                            border: '1px solid rgba(255,255,255,0.2)'
-                                        }}
-                                    >
-                                        + {tag}
-                                    </span>
-                                ))}
+                            <div className="form-group">
+                                <label style={{ display: 'block', fontSize: '0.85rem', color: '#aaa', marginBottom: '8px' }}>הערות ותיוג מהיר</label>
+                                <div style={{ marginBottom: '10px', display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                                    {quickTags.map(tag => (
+                                        <span
+                                            key={tag}
+                                            onClick={() => addTag(tag)}
+                                            style={{
+                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                padding: '6px 12px',
+                                                borderRadius: '20px',
+                                                fontSize: '0.85rem',
+                                                cursor: 'pointer',
+                                                border: '1px solid rgba(59, 130, 246, 0.2)',
+                                                color: 'var(--accent-color)'
+                                            }}
+                                        >
+                                            + {tag}
+                                        </span>
+                                    ))}
+                                </div>
+                                <textarea
+                                    value={notes}
+                                    onChange={(e) => setNotes(e.target.value)}
+                                    rows="2"
+                                    placeholder="פרטים נוספים..."
+                                    style={{ marginTop: 0 }}
+                                />
                             </div>
-                            <textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows="2"></textarea>
 
-                            <button type="submit" className="big-btn start-btn" style={{ marginTop: '20px' }}>שמור</button>
+                            <button type="submit" className="big-btn start-btn" style={{ marginTop: '10px', padding: '18px' }}>
+                                {editingTripId ? 'עדכן משמרת 💾' : 'שמור משמרת ✅'}
+                            </button>
                         </form>
                     )}
 
@@ -374,8 +430,21 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
                                             <div style={{ color: '#aaa', fontSize: '0.9rem' }}>{trip.hours} שעות {trip.isSleepover && '• 🌙 לינה'}</div>
                                             {trip.notes && <div style={{ fontStyle: 'italic', color: '#888', marginTop: '5px' }}>"{trip.notes}"</div>}
                                         </div>
-                                        <div style={{ color: 'var(--accent-color)', fontWeight: 'bold' }}>
-                                            ✓
+                                        <div style={{ display: 'flex', gap: '8px' }}>
+                                            <button
+                                                onClick={() => startEditing(trip)}
+                                                style={{ background: 'rgba(255,255,255,0.05)', border: 'none', color: '#aaa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                                                title="ערוך"
+                                            >
+                                                ✏️
+                                            </button>
+                                            <button
+                                                onClick={() => deleteTrip(trip.id)}
+                                                style={{ background: 'rgba(255,100,100,0.1)', border: 'none', color: '#ff6666', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                                                title="מחק"
+                                            >
+                                                🗑️
+                                            </button>
                                         </div>
                                     </div>
                                 ))}

@@ -7,7 +7,9 @@ import Training from './components/Training';
 import Equipment from './components/Equipment';
 import Achievements from './components/Achievements';
 import Settings from './components/Settings';
+import SummaryCard from './components/SummaryCard';
 import { sounds } from './utils/sounds';
+import { generatePDF } from './utils/pdfExport';
 
 // Data Migration Script to 'vibe_' prefix
 const migrateData = () => {
@@ -195,12 +197,25 @@ function App() {
   // goalEarnings is what counts towards 50k
   const goalEarnings = calculateGoalEarnings();
 
+  const totalHours = filteredTrips.reduce((acc, trip) => acc + (trip.hours || 0), 0);
   const netEarnings = goalEarnings; // Start counting 50k from Feb 15
   const displayEarnings = totalEarnings; // Total saved for the main UI
   const targetEarnings = 50000;
+  const remainingToGoal = Math.max(0, targetEarnings - netEarnings);
 
   const addTrip = (tripData) => {
     setTrips([...trips, { ...tripData, id: Date.now() }]);
+  };
+
+  const updateTrip = (id, newData) => {
+    setTrips(trips.map(t => t.id === id ? { ...t, ...newData } : t));
+  };
+
+  const deleteTrip = (id) => {
+    if (window.confirm('האם אתה בטוח שברצונך למחוק את המשמרת?')) {
+      setTrips(trips.filter(t => t.id !== id));
+      sounds.playSuccess();
+    }
   };
 
   const handleExportExcel = () => {
@@ -242,6 +257,11 @@ function App() {
     // 4. Download
     XLSX.writeFile(wb, `Vibe_Report_${userName.split(' ')[0]}.xlsx`);
     alert(`הדוח הוכן בהצלחה! \nVibe_Report_${userName.split(' ')[0]}.xlsx`);
+  };
+
+  const handleExportPDF = () => {
+    generatePDF(filteredTrips, userName, employeeId);
+    alert('הדוח נוצר בהצלחה ומוכן להורדה (PDF)');
   };
 
   return (
@@ -313,30 +333,46 @@ function App() {
 
       <main className="app-content" key={activeTab} style={{ animation: 'fade-in 0.4s ease' }}>
         {activeTab === 'dashboard' && (
-          <Dashboard
-            totalNet={displayEarnings}
-            remainingTrips={Math.ceil((targetEarnings - netEarnings) / shiftRate)}
-            currentStreak={currentStreak}
-            onStartShift={() => handleTabChange('operations')}
-            onLogManual={() => handleTabChange('operations')}
-          />
+          <>
+            <SummaryCard
+              totalHours={totalHours}
+              netEarnings={netEarnings}
+              targetEarnings={targetEarnings}
+            />
+            <Dashboard
+              totalNet={displayEarnings}
+              remainingTrips={Math.ceil((targetEarnings - netEarnings) / shiftRate)}
+              currentStreak={currentStreak}
+              onStartShift={() => handleTabChange('operations')}
+              onLogManual={() => handleTabChange('operations')}
+            />
+          </>
         )}
 
         {/* Combined Operations Tab (Work + Log) */}
         {activeTab === 'operations' && (
-          <JobTracker
-            trips={isStarted ? filteredTrips : []}
-            addTrip={addTrip}
-            tripCount={tripCount}
-            shiftRate={shiftRate}
-            userName={userName}
-            employeeId={employeeId}
-            viewMode="all"
-            playSound={(type, val) => {
-              if (type === 'timer') sounds.playTimer(val);
-              if (type === 'success') sounds.playSuccess();
-            }}
-          />
+          <>
+            <SummaryCard
+              totalHours={totalHours}
+              netEarnings={netEarnings}
+              targetEarnings={targetEarnings}
+            />
+            <JobTracker
+              trips={isStarted ? filteredTrips : []}
+              addTrip={addTrip}
+              updateTrip={updateTrip}
+              deleteTrip={deleteTrip}
+              tripCount={tripCount}
+              shiftRate={shiftRate}
+              userName={userName}
+              employeeId={employeeId}
+              viewMode="all"
+              playSound={(type, val) => {
+                if (type === 'timer') sounds.playTimer(val);
+                if (type === 'success') sounds.playSuccess();
+              }}
+            />
+          </>
         )}
 
         {activeTab === 'training' && <Training workoutTime={workoutTime} playSuccess={() => sounds.playSuccess()} playClick={() => sounds.playClick()} />}
@@ -361,6 +397,7 @@ function App() {
               workoutTime={workoutTime} setWorkoutTime={setWorkoutTime}
               onReset={handleSystemReset}
               onExport={handleExportExcel}
+              onExportPDF={handleExportPDF}
               soundEnabled={soundEnabled}
               setSoundEnabled={setSoundEnabled}
             />
