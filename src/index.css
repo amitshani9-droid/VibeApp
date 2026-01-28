@@ -1,0 +1,668 @@
+@import url('https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;600;800&family=Heebo:wght@300;400;700&display=swap');
+
+:root {
+  --bg-dark: #121212;
+  /* Deep Charcoal */
+  --bg-glass: #1E1E1E;
+  /* Solid Dark Grey */
+  --bg-glass-heavy: #1E1E1E;
+  /* Solid Dark Grey */
+  --border-glass: #333333;
+  /* Subtle Border */
+
+  --text-primary: #FFFFFF;
+  --text-secondary: #AAAAAA;
+
+  --accent-color: #4A90E2;
+  /* Steel Blue */
+  --accent-glow: transparent;
+  /* No Glow */
+
+  --danger-color: #FF4444;
+  --danger-glow: transparent;
+
+  --font-main: 'Assistant', 'Heebo', sans-serif;
+  --border-radius: 12px;
+  /* Sharper corners */
+}
+
+
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  direction: rtl;
+  min-height: 100vh;
+}
+
+/* Layout */
+.app-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.app-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+  padding-bottom: 90px;
+}
+
+/* Clean Header */
+.app-header {
+  padding: 20px 24px;
+  background: var(--bg-dark);
+  border-bottom: 1px solid var(--border-glass);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+
+.app-header h1 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.balance-preview {
+  direction: ltr;
+}
+
+.balance-preview span {
+  font-weight: 700;
+  color: #fff;
+  font-size: 1.1rem;
+}
+
+/* Clean Navigation */
+.bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 600px;
+  margin: 0 auto;
+  height: 80px;
+  /* Taller for mobile */
+  background: rgba(18, 18, 18, 0.9);
+  /* Slightly darker for contrast */
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
+  z-index: 100;
+  padding-bottom: 15px;
+  /* Safe area for thumbs */
+  box-shadow: 0 -4px 30px rgba(0, 0, 0, 0.5);
+}
+
+.bottom-nav button {
+  background: none;
+  border: none;
+  color: #888;
+  /* Slightly lighter inactive */
+  font-family: var(--font-main);
+  font-size: 0.7rem;
+  font-weight: 500;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Center content */
+  gap: 6px;
+  padding: 8px;
+  /* Inner padding */
+  width: 100%;
+  min-height: 60px;
+  /* Ensure strictly large touch target */
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.bottom-nav button span {
+  font-size: 1.6rem;
+  font-weight: normal;
+  transition: transform 0.2s, filter 0.2s;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
+}
+
+.bottom-nav button.active {
+  color: #fff;
+  /* Bright white for active text */
+}
+
+.bottom-nav button.active span {
+  transform: translateY(-6px) scale(1.1);
+  /* Pop up and grow */
+  color: var(--accent-color);
+  /* Blue Icon */
+  filter: drop-shadow(0 0 8px var(--accent-color));
+  /* Strong Glow */
+}
+
+/* Active tab indicator - Glowing Line */
+.bottom-nav button.active::after {
+  content: '';
+  position: absolute;
+  top: 5px;
+  /* Moved slightly */
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  /* Smaller, focused dot/dash */
+  height: 4px;
+  background: var(--accent-color);
+  border-radius: 4px;
+  box-shadow: 0 0 12px var(--accent-color), 0 0 20px var(--accent-color);
+  /* Intense Glow */
+  opacity: 0.8;
+}
+
+/* Minimal Cards */
+.card,
+.section-container>div.bg-secondary,
+.timer-container,
+.settings-panel {
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: var(--border-radius);
+  padding: 24px;
+  margin-bottom: 16px;
+  box-shadow: none;
+}
+
+.section-container h2 {
+  font-size: 1.8rem;
+  font-weight: 700;
+  margin-bottom: 20px;
+  text-align: right;
+  color: #fff;
+}
+
+h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 12px;
+  color: #eee;
+}
+
+/* Elements */
+.big-btn {
+  width: 100%;
+  padding: 16px;
+  border-radius: 8px;
+  border: none;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #333;
+  color: #fff;
+  box-shadow: none;
+}
+
+.big-btn:active {
+  background: #444;
+}
+
+.start-btn {
+  background: var(--accent-color);
+  color: #fff;
+  box-shadow: none;
+}
+
+.end-btn {
+  background: var(--danger-color);
+  color: white;
+  box-shadow: none;
+}
+
+/* Inputs form elements */
+input,
+textarea,
+select {
+  width: 100%;
+  padding: 14px;
+  background: #121212;
+  border: 1px solid var(--border-glass);
+  border-radius: 8px;
+  color: white;
+  font-family: var(--font-main);
+  font-size: 1rem;
+  margin-top: 8px;
+  outline: none;
+}
+
+input:focus,
+textarea:focus {
+  border-color: var(--accent-color);
+}
+
+/* Circular Timer - Digital Watch Style */
+.circular-timer-wrapper {
+  position: relative;
+  width: 280px;
+  height: 280px;
+  margin: 10px auto 40px auto;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  background: #000;
+  border: 4px solid #333;
+}
+
+.circular-timer-wrapper.active {
+  border-color: #fff;
+}
+
+.timer-inner {
+  text-align: center;
+  z-index: 10;
+}
+
+.timer-display {
+  font-size: 4.5rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 2px;
+  color: #fff;
+  font-family: 'Courier New', Courier, monospace;
+  /* Digital look */
+}
+
+.timer-label {
+  font-size: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 5px;
+  color: #666;
+}
+
+.active .timer-display {
+  color: #fff;
+}
+
+/* Checkboxes & Switches */
+.toggle-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #1A1A1A;
+  padding: 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 1px solid var(--border-glass);
+}
+
+.toggle-label:hover {
+  background: #222;
+}
+
+.toggle-switch {
+  width: 48px;
+  height: 26px;
+  background: #444;
+  border-radius: 26px;
+  position: relative;
+  transition: 0.2s;
+}
+
+input:checked+.toggle-switch {
+  background: var(--accent-color);
+  box-shadow: none;
+}
+
+.toggle-switch::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+input:checked+.toggle-switch::after {
+  left: 25px;
+}
+
+/* List Items */
+.checklist-item {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  border: 1px solid var(--border-glass);
+  border-bottom: 1px solid var(--border-glass);
+  cursor: pointer;
+  transition: all 0.2s;
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: #1A1A1A;
+}
+
+.checklist-item:last-child {
+  border-bottom: 1px solid var(--border-glass);
+}
+
+.checklist-item:hover {
+  background: #222;
+}
+
+.checklist-item.completed {
+  border-color: #444;
+  background: #151515;
+  opacity: 0.5;
+}
+
+.checklist-item.completed .item-content strong {
+  text-decoration: line-through;
+  color: #666;
+}
+
+.check-circle {
+  width: 22px;
+  height: 22px;
+  border: 2px solid #666;
+  border-radius: 50%;
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: black;
+  font-weight: bold;
+  font-size: 0.8rem;
+  transition: all 0.2s;
+}
+
+.checklist-item.completed .check-circle {
+  background: #666;
+  border-color: #666;
+  box-shadow: none;
+  transform: none;
+}
+
+.item-content {
+  flex: 1;
+}
+
+.item-content strong {
+  display: block;
+  font-size: 1rem;
+  margin-bottom: 2px;
+  font-weight: 500;
+}
+
+.item-content span {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+/* Floating Action Button (FAB) */
+.fab-container {
+  position: fixed;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.fab-btn {
+  width: 70px;
+  height: 70px;
+  border-radius: 50%;
+  border: none;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  background: #333;
+  color: #fff;
+  transition: all 0.2s;
+}
+
+.fab-btn.start {
+  background: var(--accent-color);
+  color: #fff;
+  box-shadow: none;
+  animation: none;
+}
+
+.fab-btn.stop {
+  background: var(--danger-color);
+  color: white;
+  animation: none;
+}
+
+.timer-container {
+  padding-bottom: 60px;
+}
+
+/* Badges Grid */
+.badges-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.badge-card {
+  display: flex;
+  align-items: center;
+  padding: 16px;
+  background: var(--bg-glass);
+  border: 1px solid var(--border-glass);
+  border-radius: 12px;
+  transition: all 0.3s;
+}
+
+.badge-card.unlocked {
+  border-color: var(--accent-color);
+  background: rgba(74, 144, 226, 0.1);
+  box-shadow: none;
+}
+
+.badge-card.locked {
+  opacity: 0.5;
+  filter: grayscale(1);
+}
+
+.status-bar {
+  background: #111;
+  border-bottom: 1px solid #333;
+  padding: 10px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+  font-size: 0.9rem;
+  color: #ccc;
+  position: sticky;
+  top: 65px;
+  z-index: 45;
+}
+
+/* Dashboard Styles */
+.dashboard-container {
+  text-align: center;
+}
+
+.dashboard-title {
+  text-align: right;
+  /* RTL */
+  font-size: 1.8rem;
+  margin-bottom: 20px;
+  background: linear-gradient(to left, #fff, #888);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.goal-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 30px;
+}
+
+.circular-progress-container {
+  margin: 20px 0;
+  filter: drop-shadow(0 0 10px rgba(74, 144, 226, 0.2));
+}
+
+.goal-footer {
+  display: flex;
+  gap: 20px;
+  margin-top: 10px;
+  width: 100%;
+  justify-content: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  padding-top: 15px;
+}
+
+.goal-label {
+  color: #888;
+  margin-left: 8px;
+}
+
+.goal-value {
+  color: #fff;
+  font-weight: bold;
+  font-family: 'Courier New', monospace;
+}
+
+/* Stats Row */
+.stats-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 15px;
+  margin-bottom: 0;
+  /* Override default card margin */
+}
+
+.stat-icon {
+  font-size: 1.5rem;
+  margin-bottom: 5px;
+}
+
+.stat-value {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.stat-label {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+
+/* Massive Buttons */
+.massive-btn {
+  width: 100%;
+  padding: 25px;
+  border-radius: 20px;
+  border: none;
+  font-size: 1.4rem;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 15px;
+  transition: transform 0.2s, box-shadow 0.2s;
+  font-family: var(--font-main);
+}
+
+.start-shift-btn {
+  background: linear-gradient(135deg, var(--accent-color) 0%, #357ABD 100%);
+  color: #fff;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.3);
+}
+
+.start-shift-btn:active {
+  transform: scale(0.98);
+}
+
+.secondary-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 16px;
+}
+
+.secondary-btn {
+  flex: 1;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid var(--border-glass);
+  border-radius: 16px;
+  color: var(--text-secondary);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: var(--font-main);
+}
+
+.secondary-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+/* Glass Refinement - Making it pop but subtle */
+.card,
+.checklist-item,
+.toggle-label {
+  background: rgba(30, 30, 30, 0.7);
+  /* Slightly more opaque */
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+  /* Deep shadow instead of glow */
+}
+
+/* Glass Refinement Utility */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+}
+
+.glass-panel:hover {
+  background: rgba(255, 255, 255, 0.08);
+  transform: translateY(-2px);
+}
