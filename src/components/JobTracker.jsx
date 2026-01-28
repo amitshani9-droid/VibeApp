@@ -37,28 +37,41 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
     const VACATION_END = new Date('2026-05-14');
 
     // Event Log State
-    const [events, setEvents] = useState(() => {
-        const saved = localStorage.getItem('dailyEvents');
-        return saved ? JSON.parse(saved) : [];
-    });
-    const [newEventText, setNewEventText] = useState('');
+    const [logDate, setLogDate] = useState(new Date().toISOString().split('T')[0]);
+    const [logTime, setLogTime] = useState('');
+    const [isLogFormOpen, setIsLogFormOpen] = useState(false);
 
     useEffect(() => {
-        localStorage.setItem('dailyEvents', JSON.stringify(events));
-    }, [events]);
+        const interval = setInterval(() => {
+            if (!logTime) { // Auto-update time if not manually touched
+                const now = new Date();
+                setLogTime(now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false }));
+            }
+        }, 1000);
+        return () => clearInterval(interval);
+    }, [logTime]);
 
     const addEvent = () => {
         if (!newEventText.trim()) return;
-        const now = new Date();
-        const timeStr = now.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+        const finalTime = logTime || new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit', hour12: false });
+
         const newEvent = {
             id: Date.now(),
             text: newEventText,
-            time: timeStr,
-            date: now.toISOString().split('T')[0] // For future filtering if needed
+            time: finalTime,
+            date: logDate
         };
         setEvents(prev => [newEvent, ...prev]);
         setNewEventText('');
+        setLogTime(''); // Reset to auto
+        setIsLogFormOpen(false);
+    };
+
+    const deleteEvent = (id) => {
+        if (window.confirm('האם למחוק את האירוע?')) {
+            setEvents(prev => prev.filter(e => e.id !== id));
+        }
     };
 
     useEffect(() => {
@@ -152,11 +165,20 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
             isSleepover,
             notes
         });
+
+        // Success Feedback
+        alert('✅ המשמרת נשמרה בהצלחה!');
+
+        // Reset states
         setManualDate('');
         setManualHours('');
         setIsSleepover(false);
         setNotes('');
         setError('');
+
+        // Switch back to timer or dashboard view if needed - but user said "closes the modal/form"
+        // Since it's a conditional render, resetting states is enough if the form is what they mean.
+        setEntryMode('timer');
     };
 
     const progress = (elapsed / 1000) % 60 * (100 / 60);
@@ -175,11 +197,16 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
                     </div>
 
                     {entryMode === 'timer' ? (
-                        <div className="timer-container">
-                            <div className="circular-timer-wrapper active" style={{ '--progress': `${progress}%` }}>
+                        <div className="timer-container" style={{ animation: 'fade-in 0.3s ease' }}>
+                            <div className={`circular-timer-wrapper ${isTracking ? 'active pulse' : ''}`} style={{
+                                '--progress': `${progress}%`,
+                                transition: 'all 0.5s ease',
+                                borderColor: isTracking ? 'var(--accent-color)' : '#333',
+                                boxShadow: isTracking ? '0 0 30px var(--accent-glow)' : 'none'
+                            }}>
                                 <div className="timer-inner">
-                                    <div className="timer-label">{isTracking ? 'משמרת פעילה' : 'מוכן לעבודה'}</div>
                                     <div className="timer-display">{formatTime(elapsed)}</div>
+                                    <div className="timer-label">{isTracking ? 'משמרת פעילה' : 'מוכן להתחלה'}</div>
                                 </div>
                             </div>
 
@@ -346,112 +373,155 @@ function JobTracker({ trips, addTrip, tripCount, shiftRate = 400, userName = 'ע
                 </>
             )}
 
-            {/* LOG VIEW: Event Log */}
+            {/* PROFESSIONAL LOGBOOK VIEW */}
             {(viewMode === 'log' || viewMode === 'all') && (
-                <div style={{ marginTop: '30px', borderTop: (viewMode === 'all' ? '1px solid rgba(255,255,255,0.1)' : 'none'), paddingTop: (viewMode === 'all' ? '20px' : '0') }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                        <h3>יומן אירועים</h3>
+                <div className="logbook-section card" style={{ marginTop: '30px', animation: 'fade-in 0.5s ease' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <h3 style={{ margin: 0, fontSize: '1.4rem' }}>📖 יומן מבצעי (LogBook)</h3>
                         <button
-                            onClick={() => {
-                                const todayStr = new Date().toISOString().split('T')[0];
-                                const todaysEvents = events.filter(e => e.date === todayStr);
-
-                                if (todaysEvents.length === 0) {
-                                    alert('אין אירועים להיום לשיתוף');
-                                    return;
-                                }
-
-                                // Sort by time (assuming they are added chronologically, but just in case)
-                                // actually they are prepended, so likely reverse order in display, let's keep array order which is newest first? 
-                                // User request: "[Time] - [Event 1] [Time] - [Event 2]" implying chronological list.
-                                // The current display maps `events` (newest first).
-                                // Let's reverse for the report so it reads Morning -> Evening.
-
-                                const sortedEvents = [...todaysEvents].reverse();
-
-                                let message = `*דיווח אירועים - ${new Date().toLocaleDateString('he-IL')}* 📝\n`;
-                                message += `דיווח מאת: ${userName} | מספר עובד: ${employeeId}\n\n`; // Personalization
-
-                                sortedEvents.forEach(e => {
-                                    message += `${e.time} - ${e.text}\n`;
-                                });
-                                message += `\nנשלח מאפליקציית Vibe`;
-
-                                window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank');
-                            }}
-                            style={{
-                                background: 'transparent',
-                                color: 'var(--accent-color)',
-                                border: '1px solid var(--accent-color)',
-                                padding: '5px 12px',
-                                borderRadius: '15px',
-                                fontSize: '0.8rem',
-                                cursor: 'pointer',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '5px'
-                            }}
+                            onClick={() => setIsLogFormOpen(!isLogFormOpen)}
+                            className="start-btn"
+                            style={{ padding: '8px 16px', borderRadius: '12px', fontSize: '0.9rem', width: 'auto' }}
                         >
-                            📤 שיתוף
+                            {isLogFormOpen ? 'סגור' : '+ אירוע חדש'}
                         </button>
                     </div>
 
-                    <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
-                        <input
-                            type="text"
-                            value={newEventText}
-                            onChange={(e) => setNewEventText(e.target.value)}
-                            placeholder="מה קורה עכשיו?"
-                            style={{
-                                flex: 1,
-                                padding: '12px',
-                                borderRadius: '12px',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                background: 'rgba(0,0,0,0.3)',
-                                color: 'white'
-                            }}
-                            onKeyPress={(e) => e.key === 'Enter' && addEvent()}
-                        />
-                        <button
-                            onClick={addEvent}
-                            style={{
-                                background: 'var(--accent-color)',
-                                border: 'none',
-                                borderRadius: '12px',
-                                width: '50px',
-                                fontSize: '1.5rem',
-                                color: 'white',
-                                cursor: 'pointer'
-                            }}
-                        >
-                            +
-                        </button>
-                    </div>
-
-                    <div className="event-log-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {events.length === 0 ? (
-                            <p style={{ color: '#666', textAlign: 'center', fontSize: '0.9rem' }}>טרם נרשמו אירועים היום</p>
-                        ) : (
-                            events.map(event => (
-                                <div key={event.id} className="event-card glass-panel" style={{
-                                    padding: '12px',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center',
-                                    borderRadius: '10px'
-                                }}>
-                                    <span style={{ fontSize: '1rem' }}>{event.text}</span>
-                                    <span style={{
-                                        fontSize: '0.85rem',
-                                        color: 'var(--accent-color)',
-                                        background: 'rgba(74, 144, 226, 0.1)',
-                                        padding: '2px 8px',
-                                        borderRadius: '6px'
-                                    }}>
-                                        {event.time}
-                                    </span>
+                    {isLogFormOpen && (
+                        <div className="glass-panel" style={{ padding: '20px', borderRadius: '16px', marginBottom: '25px', animation: 'fade-in 0.3s ease' }}>
+                            <div style={{ display: 'flex', gap: '10px', marginBottom: '15px' }}>
+                                <div style={{ flex: 1 }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>תאריך</label>
+                                    <input
+                                        type="date"
+                                        value={logDate}
+                                        onChange={(e) => setLogDate(e.target.value)}
+                                        style={{ marginTop: 0 }}
+                                    />
                                 </div>
-                            ))
+                                <div style={{ width: '100px' }}>
+                                    <label style={{ fontSize: '0.8rem', color: '#aaa', display: 'block', marginBottom: '5px' }}>זמן</label>
+                                    <input
+                                        type="time"
+                                        value={logTime}
+                                        onChange={(e) => setLogTime(e.target.value)}
+                                        style={{ marginTop: 0 }}
+                                    />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '10px' }}>
+                                <input
+                                    type="text"
+                                    value={newEventText}
+                                    onChange={(e) => setNewEventText(e.target.value)}
+                                    placeholder="תיאור האירוע..."
+                                    style={{
+                                        flex: 1,
+                                        padding: '14px',
+                                        borderRadius: '14px',
+                                        border: '1px solid var(--border-glass)',
+                                        background: 'rgba(0,0,0,0.2)',
+                                        color: 'white'
+                                    }}
+                                    onKeyPress={(e) => e.key === 'Enter' && addEvent()}
+                                />
+                                <button
+                                    onClick={addEvent}
+                                    className="start-btn"
+                                    style={{
+                                        width: '54px',
+                                        borderRadius: '14px',
+                                        fontSize: '1.5rem',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center'
+                                    }}
+                                >
+                                    ✓
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    <div className="logbook-list" style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                        {events.length === 0 ? (
+                            <p style={{ color: '#666', textAlign: 'center', fontSize: '0.9rem', padding: '40px' }}>אין רישומים ביומן עדיין</p>
+                        ) : (
+                            Object.entries(
+                                events.reduce((groups, event) => {
+                                    const date = event.date;
+                                    if (!groups[date]) groups[date] = [];
+                                    groups[date].push(event);
+                                    return groups;
+                                }, {})
+                            )
+                                .sort(([dateA], [dateB]) => dateB.localeCompare(dateA))
+                                .map(([date, dayEvents]) => {
+                                    const dateObj = new Date(date);
+                                    const dayName = dateObj.toLocaleDateString('he-IL', { weekday: 'long' });
+                                    const dateStr = dateObj.toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit' });
+
+                                    return (
+                                        <div key={date} className="log-day-group">
+                                            <div style={{
+                                                fontSize: '0.9rem',
+                                                fontWeight: '700',
+                                                color: 'var(--accent-color)',
+                                                marginBottom: '10px',
+                                                padding: '0 5px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '10px'
+                                            }}>
+                                                <span>{dayName}, {dateStr}</span>
+                                                <div style={{ flex: 1, height: '1px', background: 'linear-gradient(to left, var(--accent-color), transparent)', opacity: 0.3 }}></div>
+                                            </div>
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                                                {dayEvents.sort((a, b) => b.time.localeCompare(a.time)).map(event => (
+                                                    <div key={event.id} className="event-card glass-panel" style={{
+                                                        padding: '12px 16px',
+                                                        display: 'flex',
+                                                        justifyContent: 'space-between',
+                                                        alignItems: 'center',
+                                                        borderRadius: '14px',
+                                                        border: '1px solid rgba(255,255,255,0.05)',
+                                                        position: 'relative'
+                                                    }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                                                            <span style={{
+                                                                fontSize: '0.75rem',
+                                                                color: 'var(--accent-color)',
+                                                                fontWeight: '800',
+                                                                background: 'rgba(59, 130, 246, 0.1)',
+                                                                padding: '2px 6px',
+                                                                borderRadius: '6px',
+                                                                fontFamily: 'monospace'
+                                                            }}>
+                                                                {event.time}
+                                                            </span>
+                                                            <span style={{ fontSize: '1rem', color: '#eee' }}>{event.text}</span>
+                                                        </div>
+                                                        <button
+                                                            onClick={() => deleteEvent(event.id)}
+                                                            style={{
+                                                                background: 'none',
+                                                                border: 'none',
+                                                                color: 'rgba(255,255,255,0.2)',
+                                                                fontSize: '0.9rem',
+                                                                cursor: 'pointer',
+                                                                padding: '5px'
+                                                            }}
+                                                            onMouseEnter={(e) => e.target.style.color = 'var(--danger-color)'}
+                                                            onMouseLeave={(e) => e.target.style.color = 'rgba(255,255,255,0.2)'}
+                                                        >
+                                                            ✕
+                                                        </button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    );
+                                })
                         )}
                     </div>
                 </div>

@@ -100,11 +100,73 @@ function App() {
     return total;
   };
 
+  // --- Streak Logic ---
+  const calculateStreak = () => {
+    // 1. Get unique activity dates from trips
+    const tripDates = new Set(trips.map(t => t.date));
+
+    // 2. Get activity dates from training completions (stored in localStorage with dynamic keys)
+    // Keys format: myGrowthApp_training_complete_DD/MM/YYYY
+    const trainingDates = new Set();
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key.startsWith('myGrowthApp_training_complete_') && localStorage.getItem(key) === 'true') {
+        const datePart = key.replace('myGrowthApp_training_complete_', '');
+        // Convert DD/MM/YYYY to YYYY-MM-DD
+        const [d, m, y] = datePart.split('/');
+        trainingDates.add(`${y}-${m.padStart(2, '0')}-${d.padStart(2, '0')}`);
+      }
+    }
+
+    // Combine all activity dates
+    const allActivityDates = new Set([...tripDates, ...trainingDates]);
+    if (allActivityDates.size === 0) return 0;
+
+    const sortedDates = Array.from(allActivityDates).sort().reverse();
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+    // Check if the streak is still alive (active today or yesterday)
+    if (!allActivityDates.has(todayStr) && !allActivityDates.has(yesterdayStr)) {
+      return 0;
+    }
+
+    let streak = 0;
+    let curr = new Date(sortedDates[0]);
+
+    // Simple descending check
+    for (let i = 0; i < sortedDates.length; i++) {
+      const dateStr = sortedDates[i];
+      const dateObj = new Date(dateStr);
+
+      if (i === 0) {
+        streak = 1;
+      } else {
+        const prevDateObj = new Date(sortedDates[i - 1]);
+        const diffInDays = (prevDateObj - dateObj) / (1000 * 60 * 60 * 24);
+
+        if (diffInDays === 1) {
+          streak++;
+        } else {
+          break; // Streak broken
+        }
+      }
+    }
+
+    return streak;
+  };
+
+  const currentStreak = calculateStreak();
+
   const totalEarnings = calculateTotalEarnings();
   // goalEarnings is what counts towards 50k
   const goalEarnings = calculateGoalEarnings();
 
   const netEarnings = goalEarnings; // Start counting 50k from Feb 15
+  const displayEarnings = totalEarnings; // Total saved for the main UI
   const targetEarnings = 50000;
 
   const addTrip = (tripData) => {
@@ -219,11 +281,12 @@ function App() {
 
 
 
-      <main className="app-content">
+      <main className="app-content" key={activeTab} style={{ animation: 'fade-in 0.4s ease' }}>
         {activeTab === 'dashboard' && (
           <Dashboard
-            totalNet={netEarnings}
+            totalNet={displayEarnings}
             remainingTrips={Math.ceil((targetEarnings - netEarnings) / shiftRate)}
+            currentStreak={currentStreak}
             onStartShift={() => setActiveTab('job')}
             onLogManual={() => setActiveTab('job')}
           />
@@ -281,53 +344,38 @@ function App() {
       <nav className="bottom-nav">
         <button
           className={activeTab === 'dashboard' ? 'active' : ''}
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(10);
-            setActiveTab('dashboard');
-          }}
+          onClick={() => setActiveTab('dashboard')}
         >
           <span>🏠</span>
-          ראשי
+          <span>ראשי</span>
         </button>
         <button
           className={activeTab === 'job' ? 'active' : ''}
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(10);
-            setActiveTab('job');
-          }}
+          onClick={() => setActiveTab('job')}
         >
           <span>⏱️</span>
-          עבודה
+          <span>עבודה</span>
         </button>
         <button
           className={activeTab === 'log' ? 'active' : ''}
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(10);
-            setActiveTab('log');
-          }}
+          onClick={() => setActiveTab('log')}
         >
           <span>📝</span>
-          יומן
+          <span>יומן</span>
         </button>
         <button
           className={activeTab === 'training' ? 'active' : ''}
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(10);
-            setActiveTab('training');
-          }}
+          onClick={() => setActiveTab('training')}
         >
           <span>🏋️</span>
-          אימון
+          <span>אימון</span>
         </button>
         <button
           className={activeTab === 'settings' ? 'active' : ''}
-          onClick={() => {
-            if (navigator.vibrate) navigator.vibrate(10);
-            setActiveTab('settings');
-          }}
+          onClick={() => setActiveTab('settings')}
         >
           <span>⚙️</span>
-          הגדרות
+          <span>הגדרות</span>
         </button>
       </nav>
     </div>

@@ -13,8 +13,8 @@ export default defineConfig({
         name: 'Vibe',
         short_name: 'Vibe',
         description: 'Vibe - Personal Management & Growth',
-        theme_color: '#050505',
-        background_color: '#050505',
+        theme_color: '#000000',
+        background_color: '#000000',
         display: 'standalone',
         orientation: 'portrait',
         icons: [
@@ -26,7 +26,8 @@ export default defineConfig({
           {
             src: 'vibe_logo.jpg',
             sizes: '512x512',
-            type: 'image/jpeg'
+            type: 'image/jpeg',
+            purpose: 'any maskable'
           }
         ]
       }
